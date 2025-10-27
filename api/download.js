@@ -1,15 +1,26 @@
 import PDFDocument from "pdfkit";
 import { Buffer } from "buffer";
 
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: "10mb",
+    },
+  },
+};
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
   try {
-    const { result, image } = req.body;
+    const { result, image } = req.body || {};
 
-    // Create a new PDF document
+    if (!result && !image) {
+      return res.status(400).json({ error: "No data provided for PDF generation." });
+    }
+
     const doc = new PDFDocument({ bufferPages: true });
     const buffers = [];
 
@@ -24,14 +35,18 @@ export default async function handler(req, res) {
       res.status(200).send(pdfData);
     });
 
-    // PDF title
-    doc.fontSize(24).text("🩺 Prescription Analysis Report", { align: "center" });
+    // Title
+    doc.fontSize(22).text("🩺 Prescription Analysis Report", { align: "center" });
     doc.moveDown();
     doc.fontSize(14).text(`Date: ${new Date().toLocaleDateString()}`);
     doc.moveDown(2);
-    doc.fontSize(14).text(result || "No analysis result found.", { align: "left" });
 
-    // Add image if provided
+    // Add analysis text
+    doc.fontSize(14).text(result || "No analysis text available.", {
+      align: "left",
+    });
+
+    // Add prescription image
     if (image) {
       try {
         const base64Data = image.replace(/^data:image\/\w+;base64,/, "");
