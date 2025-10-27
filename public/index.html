@@ -205,7 +205,6 @@
       <footer>
         ⚕️ MediRead © 2025 | Built with ❤️ to simplify healthcare
       </footer>
-
     </div>
 
     <script>
@@ -262,17 +261,22 @@
         downloadButton.style.display = "none";
 
         try {
-          const response = await fetch("/analyze", {
+          const response = await fetch("/api/analyze", {
             method: "POST",
             body: formData,
           });
+
+          if (!response.ok) {
+            const text = await response.text();
+            throw new Error(text || "Server returned an error");
+          }
+
           const data = await response.json();
 
           if (data.result) {
             analysisResult = data.result;
             analysisImage = data.image;
 
-            // Split the result into sections based on headings (e.g. lines starting with ##)
             const formattedHTML = formatWithSideHeadings(data.result);
 
             resultDiv.innerHTML = formattedHTML;
@@ -291,7 +295,6 @@
       });
 
       function formatWithSideHeadings(text) {
-        // Split into sections where lines start with keywords or headings
         const sections = text.split(/\n(?=[A-Z].*:)/g);
         let html = "<h3>🩺 Prescription Analysis</h3>";
         sections.forEach((section) => {
@@ -306,17 +309,18 @@
       }
 
       downloadButton.addEventListener("click", async () => {
-        const response = await fetch("/download", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            result: analysisResult,
-            image: analysisImage,
-          }),
-        });
-        if (response.ok) {
+        try {
+          const response = await fetch("/api/download", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ result: analysisResult, image: analysisImage }),
+          });
+
+          if (!response.ok) {
+            const text = await response.text();
+            throw new Error(text || "Failed to generate PDF");
+          }
+
           const blob = await response.blob();
           const url = window.URL.createObjectURL(blob);
           const a = document.createElement("a");
@@ -325,8 +329,8 @@
           document.body.appendChild(a);
           a.click();
           a.remove();
-        } else {
-          alert("Failed to generate and download the PDF report.");
+        } catch (error) {
+          alert("Error: " + error.message);
         }
       });
     </script>
