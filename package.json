@@ -1,21 +1,12 @@
 {
-  "name": "plant-analysis-tool",
+  "name": "mediread",
   "version": "1.0.0",
-  "description": "",
-  "main": "api/index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "scripts": {},
   "dependencies": {
     "@google/genai": "^1.27.0",
     "@google/generative-ai": "^0.24.1",
     "dotenv": "^17.2.3",
-    "express": "^5.1.0",
     "multer": "^2.0.2",
-    "pdfkit": "^0.17.2",
-    "serverless-http": "^4.0.0"
+    "pdfkit": "^0.17.2"
   }
 }
