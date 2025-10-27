@@ -2,9 +2,6 @@ require("dotenv").config();
 const express = require("express");
 const multer = require("multer");
 const PDFDocument = require("pdfkit");
-const fs = require("fs");
-const fsPromises = fs.promises;
-const path = require("path");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 const app = express();
@@ -15,28 +12,19 @@ const app = express();
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 // -----------------------------
-// 📂 Ensure Upload Directory Exists
+// 📸 Multer Memory Storage
 // -----------------------------
-const uploadDir = path.join(__dirname, "uploads");
-fsPromises.mkdir(uploadDir, { recursive: true }).catch(console.error);
-
-// -----------------------------
-// 📸 Configure Multer (File Upload)
-// -----------------------------
-const upload = multer({ dest: uploadDir });
+const upload = multer({ storage: multer.memoryStorage() });
 
 // -----------------------------
 // ⚙️ Express Middleware
 // -----------------------------
 app.use(express.json({ limit: "10mb" }));
-app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, "public"))); // Serve frontend files
+app.use(express.static("public")); // Serve frontend files
 
-// -----------------------------
-// 🏠 Serve Frontend
-// -----------------------------
+// Serve index.html on root
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
+  res.sendFile("index.html", { root: "public" });
 });
 
 // -----------------------------
@@ -48,12 +36,8 @@ app.post("/analyze", upload.single("image"), async (req, res) => {
       return res.status(400).json({ error: "No prescription image uploaded" });
     }
 
-    const imagePath = req.file.path;
-    const imageData = await fsPromises.readFile(imagePath, {
-      encoding: "base64",
-    });
+    const imageData = req.file.buffer.toString("base64");
 
-    // 🧠 Use Gemini model for OCR + understanding
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
     const prompt = `
@@ -82,8 +66,6 @@ app.post("/analyze", upload.single("image"), async (req, res) => {
     ]);
 
     const analysis = result.response.text();
-
-    await fsPromises.unlink(imagePath); // cleanup uploaded file
 
     res.json({
       result: analysis,
@@ -145,3 +127,4 @@ app.post("/download", express.json(), async (req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`✅ MediRead server running on port ${PORT}...`));
 
+module.exports = app; // for Vercel serverless
