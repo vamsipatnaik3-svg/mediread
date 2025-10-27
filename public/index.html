@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MediRead: AI Prescription Analyzer</title>
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        font-family: "Poppins", "Segoe UI", Tahoma, sans-serif;
+        line-height: 1.6;
+        color: #2b3e5e;
+        background: linear-gradient(135deg, #f4f8fb, #e1f5fe);
+        margin: 0;
+        padding: 20px;
+      }
+
+      .container {
+        background-color: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        padding: 30px;
+        max-width: 850px;
+        margin: 0 auto;
+      }
+
+      h1 {
+        text-align: center;
+        color: #0077b6;
+        font-size: 2em;
+      }
+
+      .description {
+        text-align: center;
+        color: #555;
+        margin-bottom: 25px;
+      }
+
+      .steps {
+        background-color: #f1faff;
+        border-left: 5px solid #0077b6;
+        border-radius: 8px;
+        padding: 15px 20px;
+        margin-bottom: 30px;
+      }
+
+      .steps h2 {
+        color: #0077b6;
+        margin-bottom: 10px;
+      }
+
+      .upload-area {
+        border: 2px dashed #0096c7;
+        border-radius: 8px;
+        padding: 25px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .upload-area:hover {
+        background-color: #e3f2fd;
+        transform: scale(1.02);
+      }
+
+      .upload-icon {
+        font-size: 48px;
+        color: #0077b6;
+        margin-bottom: 10px;
+      }
+
+      #imageInput {
+        display: none;
+      }
+
+      #imagePreview {
+        max-width: 100%;
+        max-height: 300px;
+        margin-top: 20px;
+        border-radius: 8px;
+        display: none;
+        border: 1px solid #ccc;
+      }
+
+      button {
+        display: block;
+        width: 100%;
+        padding: 12px;
+        background-color: #0077b6;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: bold;
+        transition: background-color 0.3s, transform 0.2s;
+        margin-top: 20px;
+      }
+
+      button:hover {
+        background-color: #005f8f;
+        transform: scale(1.02);
+      }
+
+      #loading,
+      #result {
+        text-align: center;
+        margin-top: 20px;
+        font-weight: bold;
+      }
+
+      #loading {
+        color: #0077b6;
+      }
+
+      #result {
+        background-color: #eef7f2;
+        padding: 20px;
+        border-radius: 8px;
+        border: 1px solid #a5d6a7;
+        text-align: left;
+      }
+
+      .section-block {
+        margin-bottom: 20px;
+        border-left: 5px solid #0077b6;
+        background: #f8fcff;
+        padding: 10px 15px;
+        border-radius: 6px;
+      }
+
+      .section-block h3 {
+        color: #0077b6;
+        margin-top: 0;
+      }
+
+      #downloadButton {
+        background-color: #e53935;
+      }
+
+      #downloadButton:hover {
+        background-color: #c62828;
+      }
+
+      footer {
+        text-align: center;
+        margin-top: 30px;
+        font-size: 14px;
+        color: #777;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1><i class="fas fa-prescription-bottle-alt"></i> MediRead</h1>
+      <p class="description">
+        Upload a doctor’s handwritten prescription and let AI identify the
+        medicines, dosages, and their purpose clearly for you.
+      </p>
+
+      <div class="steps">
+        <h2><i class="fas fa-stethoscope"></i> How to Use</h2>
+        <ol>
+          <li>📸 <strong>Step 1:</strong> Take a clear photo of your prescription.</li>
+          <li>📤 <strong>Step 2:</strong> Upload it below by clicking or dragging the image.</li>
+          <li>🤖 <strong>Step 3:</strong> Let our AI read and analyze the handwriting.</li>
+          <li>📋 <strong>Step 4:</strong> Review the detected medicines and their usage.</li>
+          <li>📄 <strong>Step 5:</strong> Download a neatly formatted PDF report.</li>
+        </ol>
+      </div>
+
+      <form id="uploadForm" enctype="multipart/form-data">
+        <div class="upload-area" id="dropArea">
+          <i class="fas fa-cloud-upload-alt upload-icon"></i>
+          <p class="upload-text">
+            Drag & Drop or Click to Upload a Prescription Image
+          </p>
+          <input
+            type="file"
+            name="image"
+            accept="image/*"
+            required
+            id="imageInput"
+          />
+          <img id="imagePreview" alt="Prescription preview" />
+        </div>
+        <button type="submit">
+          <i class="fas fa-search"></i> Analyze Prescription
+        </button>
+      </form>
+
+      <div id="loading" style="display: none">
+        <i class="fas fa-spinner fa-spin"></i> Reading doctor’s handwriting...
+      </div>
+
+      <div id="result"></div>
+
+      <button id="downloadButton" style="display: none">
+        <i class="fas fa-file-pdf"></i> Download PDF Report
+      </button>
+
+      <footer>
+        ⚕️ MediRead © 2025 | Built with ❤️ to simplify healthcare
+      </footer>
+
+    </div>
+
+    <script>
+      const imageInput = document.getElementById("imageInput");
+      const imagePreview = document.getElementById("imagePreview");
+      const uploadForm = document.getElementById("uploadForm");
+      const resultDiv = document.getElementById("result");
+      const loadingDiv = document.getElementById("loading");
+      const downloadButton = document.getElementById("downloadButton");
+      const dropArea = document.getElementById("dropArea");
+
+      let analysisResult = "";
+      let analysisImage = "";
+
+      dropArea.addEventListener("click", () => imageInput.click());
+      dropArea.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        dropArea.style.backgroundColor = "#e3f2fd";
+      });
+      dropArea.addEventListener("dragleave", () => {
+        dropArea.style.backgroundColor = "";
+      });
+      dropArea.addEventListener("drop", (e) => {
+        e.preventDefault();
+        dropArea.style.backgroundColor = "";
+        const file = e.dataTransfer.files[0];
+        if (file && file.type.startsWith("image/")) {
+          imageInput.files = e.dataTransfer.files;
+          handleImageUpload(file);
+        }
+      });
+      imageInput.addEventListener("change", (event) => {
+        const file = event.target.files[0];
+        if (file) {
+          handleImageUpload(file);
+        }
+      });
+
+      function handleImageUpload(file) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          imagePreview.src = e.target.result;
+          imagePreview.style.display = "block";
+        };
+        reader.readAsDataURL(file);
+      }
+
+      uploadForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        loadingDiv.style.display = "block";
+        resultDiv.style.display = "none";
+        resultDiv.textContent = "";
+        downloadButton.style.display = "none";
+
+        try {
+          const response = await fetch("/analyze", {
+            method: "POST",
+            body: formData,
+          });
+          const data = await response.json();
+
+          if (data.result) {
+            analysisResult = data.result;
+            analysisImage = data.image;
+
+            // Split the result into sections based on headings (e.g. lines starting with ##)
+            const formattedHTML = formatWithSideHeadings(data.result);
+
+            resultDiv.innerHTML = formattedHTML;
+            resultDiv.style.display = "block";
+            downloadButton.style.display = "block";
+          } else if (data.error) {
+            resultDiv.textContent = "Error: " + data.error;
+            resultDiv.style.display = "block";
+          }
+        } catch (error) {
+          resultDiv.textContent = "Error: " + error.message;
+          resultDiv.style.display = "block";
+        } finally {
+          loadingDiv.style.display = "none";
+        }
+      });
+
+      function formatWithSideHeadings(text) {
+        // Split into sections where lines start with keywords or headings
+        const sections = text.split(/\n(?=[A-Z].*:)/g);
+        let html = "<h3>🩺 Prescription Analysis</h3>";
+        sections.forEach((section) => {
+          const [title, ...content] = section.split(":");
+          html += `
+            <div class="section-block">
+              <h3>${title.trim()}</h3>
+              <p>${content.join(":").trim()}</p>
+            </div>`;
+        });
+        return html;
+      }
+
+      downloadButton.addEventListener("click", async () => {
+        const response = await fetch("/download", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            result: analysisResult,
+            image: analysisImage,
+          }),
+        });
+        if (response.ok) {
+          const blob = await response.blob();
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "Prescription_Analysis_Report.pdf";
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+        } else {
+          alert("Failed to generate and download the PDF report.");
+        }
+      });
+    </script>
+  </body>
+</html>
