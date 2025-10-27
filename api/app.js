@@ -3,6 +3,7 @@ const express = require("express");
 const multer = require("multer");
 const PDFDocument = require("pdfkit");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
+const serverless = require("serverless-http"); // Wrap Express for serverless
 
 const app = express();
 
@@ -20,9 +21,11 @@ const upload = multer({ storage: multer.memoryStorage() });
 // ⚙️ Express Middleware
 // -----------------------------
 app.use(express.json({ limit: "10mb" }));
-app.use(express.static("public")); // Serve frontend files
 
-// Serve index.html on root
+// Serve static files in public folder
+app.use(express.static("public"));
+
+// Serve index.html
 app.get("/", (req, res) => {
   res.sendFile("index.html", { root: "public" });
 });
@@ -37,7 +40,6 @@ app.post("/analyze", upload.single("image"), async (req, res) => {
     }
 
     const imageData = req.file.buffer.toString("base64");
-
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
     const prompt = `
@@ -80,7 +82,7 @@ app.post("/analyze", upload.single("image"), async (req, res) => {
 });
 
 // -----------------------------
-// 📄 PDF Download Route (In-Memory)
+// 📄 PDF Download Route
 // -----------------------------
 app.post("/download", express.json(), async (req, res) => {
   const { result, image } = req.body;
@@ -99,14 +101,12 @@ app.post("/download", express.json(), async (req, res) => {
       res.send(pdfData);
     });
 
-    // PDF Content
     doc.fontSize(24).text("Prescription Analysis Report", { align: "center" });
     doc.moveDown();
     doc.fontSize(14).text(`Date: ${new Date().toLocaleDateString()}`);
     doc.moveDown(2);
     doc.fontSize(14).text(result || "No analysis text provided.", { align: "left" });
 
-    // Add image if provided
     if (image) {
       const base64Data = image.replace(/^data:image\/\w+;base64,/, "");
       const buffer = Buffer.from(base64Data, "base64");
@@ -122,9 +122,7 @@ app.post("/download", express.json(), async (req, res) => {
 });
 
 // -----------------------------
-// 🚀 Start Server
+// 🚀 Export handler for Vercel
 // -----------------------------
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`✅ MediRead server running on port ${PORT}...`));
-
-module.exports = app; // for Vercel serverless
+module.exports = app;
+module.exports.handler = serverless(app);
